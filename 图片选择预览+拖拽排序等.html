@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <style>
+        body,
+        html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+        }
+
+        .inputc {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+        }
+
+        .sbtn {
+            width: 160px;
+            height: 36px;
+            line-height: 36px;
+            text-align: center;
+            border-radius: 18px;
+            background: rgb(50, 159, 50);
+            color: white;
+            cursor: pointer;
+        }
+
+        .fi {
+            width: 160px;
+            height: 36px;
+            position: absolute;
+            top: 0px;
+            left: 0px;
+            z-index: 1;
+            opacity: 0;
+            cursor: pointer;
+        }
+
+        .cbox {
+            width: 100%;
+            height: 100%;
+            box-sizing: border-box;
+            padding: 10px;
+            overflow: hidden;
+            display: flex;
+            justify-content: left;
+            padding-top: 50px;
+        }
+
+        .list {
+            width: 300px;
+            height: 100%;
+            border-right: 2px solid #ccc;
+            box-sizing: border-box;
+            padding-right: 10px;
+            user-select: none;
+        }
+
+        .sfbar {
+            width: 100%;
+            height: 30px;
+            line-height: 30px;
+            text-indent: 10px;
+            font-size: 14px;
+            border-bottom: 1px solid #ccc;
+            position: relative;
+        }
+
+        .sfbar:hover {
+            border-bottom: 1px solid rgb(47, 160, 47);
+            color: rgb(47, 160, 47);
+        }
+
+        .sfbar:hover .op {
+            display: inline;
+        }
+
+        .rightop {
+            position: absolute;
+            height: 30px;
+            right: 0;
+            top: 0;
+        }
+
+        .op {
+            cursor: pointer;
+            font-size: 12px;
+            padding: 2px 6px;
+            margin: 0 5px;
+            background: rgb(69, 135, 209);
+            color: white;
+            border-radius: 10px;
+            display: none;
+        }
+
+        .delete {
+            background: rgb(223, 99, 99);
+        }
+
+        .showbox {
+            padding-left: 10px;
+            height: 100%;
+            flex-grow: 1;
+            overflow-y: auto;
+        }
+
+        .spicc {
+            width: 300px;
+            position: relative;
+            box-sizing: border-box;
+
+        }
+
+        /* .spicc:hover .cc{
+            display: flex;
+        } */
+        .picc {
+            width: 300px;
+        }
+
+        .showpic {
+            width: 100%;
+            height: auto;
+            display: block;
+        }
+
+        .label {
+            width: 100%;
+            height: 30px;
+            line-height: 30px;
+            background-color: black;
+            color: white;
+            text-align: left;
+            text-indent: 1em;
+            position: absolute;
+            top: 0;
+            left: 0;
+        }
+
+        .cc {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 50px;
+            line-height: 50px;
+            background: rgba(255, 255, 255, 0.5);
+            display: flex;
+            align-items: center;
+            justify-content: space-evenly;
+        }
+
+        .cbtn {
+            width: 60px;
+            height: 34px;
+            line-height: 34px;
+            text-align: center;
+            cursor: pointer;
+            background: green;
+            color: white;
+            border-radius: 17px;
+            font-size: 13px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="inputc">
+        <input type="file" class="fi" id="files" multiple="multiple" accept="image/*" onchange="showchoosedfiles()">
+        <div class="sbtn">选择文件</div>
+    </div>
+    <div class="cbox">
+        <div class="list" id="list" ondragover="dover(event)" ondrop="ddrop(event)"></div>
+        <div class="showbox" id="showbox"></div>
+    </div>
+</body>
+<script>
+    var choosedfiles = []
+    let showchoosedfiles = e => {
+        let cfs = document.getElementById('files').files;
+        let cnt = 0;
+        for (let i = 0; i < cfs.length; i++) {
+            let f = cfs[i];
+            let fa = choosedfiles.filter(cf => cf.name == f.name)
+            if (fa.length == 0) {
+                choosedfiles.push(f);
+                cnt++;
+            }
+            else {
+                console.log('请勿选择重复文件！')
+                continue;
+            }
+        }
+        if (cnt > 0) {
+            redrawlist();
+            drawPicList();
+        }
+        document.getElementById('files').value = ''
+    }
+    let deletecfile = (fname, e) => {
+
+        // document.getElementById('list').removeChild(document.getElementById(fname));
+        for (let i = 0; i < choosedfiles.length; i++) {
+            if (choosedfiles[i].name == fname) {
+                choosedfiles.splice(i, 1);
+            }
+        }
+        redrawlist();
+        drawPicList();
+        e.stopPropagation();
+    }
+    let handlepic = (e, fname) => {
+        let fn = fname;
+        let tp = e.target.dataset.tp;
+        if (tp == 4) {
+            deletecfile(fn);
+        }
+        else if (tp == 3) {
+            moveimg(fname, 1);
+        }
+        else if (tp == 2) {
+            moveimg(fname, -1);
+        }
+        else if (tp == 1) {
+
+        }
+
+    }
+    const toimg = fn => {
+        scrolltoimg(fn);
+    }
+    const moveimg = (fn, tp) => {
+        let idx;
+        for (let i = 0; i < choosedfiles.length; i++) {
+            if (choosedfiles[i].name == fn) {
+                idx = i;
+                break;
+            }
+        }
+        if (tp == 1) {
+            if (idx == (choosedfiles.length - 1)) {
+
+                return;
+            }
+            let f = choosedfiles.splice(idx, 1)[0];
+            choosedfiles.splice(idx + 1, 0, f);
+        }
+        else if (tp == -1) {
+            if (idx == 0) {
+                return
+            }
+            let f = choosedfiles.splice(idx, 1)[0];
+            choosedfiles.splice(idx - 1, 0, f);
+        }
+
+        redrawlist();
+        drawPicList();
+        setTimeout(() => {
+            scrolltoimg(fn)
+        }, 100);
+
+    }
+    const redrawlist = () => {
+        let lstr = ''
+
+        for (let j = 0; j < choosedfiles.length; j++) {
+            let f = choosedfiles[j];
+            lstr += `<div class='sfbar' id='${f.name}' onclick='toimg("${f.name}")' draggable='true' onDragStart=dstart(event) >${f.name}
+                    <div class='rightop'>
+                        <span class='op delete' onclick='deletecfile("${f.name}",event)'>X</span>
+                    </div>
+                 </div>`;
+
+        }
+        document.getElementById('list').innerHTML = lstr;
+    }
+    //拖放事件
+    const dstart = e => {
+        e.dataTransfer.effectAllowed = 'move';
+        e.dataTransfer.setData('id', e.target.id);
+        e.dataTransfer.setDragImage(e.target, 0, 0);
+    }
+    const dover = e => {
+        event.preventDefault();
+        event.dataTransfer.dropEffect = 'move';
+    }
+    const ddrop = e => {
+        e.preventDefault();
+        let id = e.dataTransfer.getData('id');
+        let tid = e.target.id;
+        if(id==tid){return}
+        let t = e.target;
+        let mode = 'before';
+        if (e.target.parentNode.id != 'list') {
+            mode = 'after';
+            document.getElementById('list').appendChild(document.getElementById(id))
+        }
+        else {
+            document.getElementById('list').insertBefore(document.getElementById(id), t)
+        }
+        let f;
+        for (let i = 0; i < choosedfiles.length; i++) {
+            if (choosedfiles[i].name == id) {
+                f = choosedfiles.splice(i, 1)[0]
+                break;
+            }
+        }
+        if (mode == 'after') {
+            choosedfiles.push(f)
+        }
+        else {
+            for (let i = 0; i < choosedfiles.length; i++) {
+                if (choosedfiles[i].name == tid) {
+                    choosedfiles.splice(i, 0, f)
+                    break;
+                }
+            }
+        }
+        drawPicList();
+        setTimeout(() => {
+            scrolltoimg(id);
+        }, 100);
+    }
+    const scrolltoimg = id => {
+        document.getElementById('showbox').scrollTop = document.getElementById(id + 'pic').offsetTop - 50;
+    }
+    const drawPicList = () => {
+        let plstr = '';
+        for (let i = 0; i < choosedfiles.length; i++) {
+            let f = choosedfiles[i];
+            let url = window.URL.createObjectURL(f);
+            plstr += `
+                    <div class='spicc' id='${f.name + "pic"}'>
+
+                        <div class='picc'>
+                            <img class='showpic' src='${url}'>
+                        </div>
+                        <div class='label'>${f.name}</div>
+                        <div class='cc' onclick='handlepic(event,"${f.name}")'>
+                          
+                            <span class='cbtn' data-tp='2'>上移</span>
+                            <span class='cbtn' data-tp='3'>下移</span>
+                            <span class='cbtn' data-tp='4'>删除</span>
+                        </div>
+                    </div>
+                 `
+        }
+        document.getElementById('showbox').innerHTML = plstr;
+    }
+</script>
+
+</html>
